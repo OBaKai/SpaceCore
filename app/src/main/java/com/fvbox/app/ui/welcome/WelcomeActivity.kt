@@ -6,6 +6,7 @@ import android.os.Bundle
 import com.fvbox.R
 import com.fvbox.app.base.BaseActivity
 import com.fvbox.app.ui.main.MainActivity
+import com.fvbox.llk.HomeActivity
 import com.fvbox.util.showToast
 import com.permissionx.guolindev.PermissionX
 
@@ -39,7 +40,8 @@ class WelcomeActivity : BaseActivity() {
     }
 
     private fun go() {
-        MainActivity.start(this)
+//        MainActivity.start(this)
+        HomeActivity.start(this)
         finish()
     }
 }
