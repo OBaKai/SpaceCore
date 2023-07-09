@@ -12,6 +12,7 @@ import com.fvbox.R
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
 import com.gyf.immersionbar.ktx.immersionBar
+import com.uuzuche.lib_zxing.activity.ZXingLibrary
 
 class HomeActivity : AppCompatActivity() {
 
@@ -48,6 +49,9 @@ class HomeActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_home)
+
+        //扫描二维码库初始化
+        ZXingLibrary.initDisplayOpinion(this)
 
         immersionBar {
             fitsSystemWindows(true, R.color.white)
