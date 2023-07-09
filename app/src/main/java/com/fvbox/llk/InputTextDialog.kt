@@ -8,6 +8,7 @@ import android.view.View
 import android.view.WindowManager.LayoutParams
 import android.widget.EditText
 import com.fvbox.R
+import com.fvbox.llk.utils.SpUtil
 import com.fvbox.util.extension.dp
 import com.fvbox.util.showToast
 
@@ -34,6 +35,11 @@ class InputTextDialog(context: Context, private val callback: (String)->Unit) : 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val et = rootView.findViewById<EditText>(R.id.et)
+
+        val msg = SpUtil.getString("inputMsg")
+        if (!msg.isNullOrEmpty()){
+            et.setText(msg)
+        }
 
         rootView.findViewById<View>(R.id.btn).setOnClickListener {
             if (et.text.isNullOrEmpty()){

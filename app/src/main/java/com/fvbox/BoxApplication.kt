@@ -7,6 +7,7 @@ import com.fvbox.app.config.BoxConfigLoader
 import com.fvbox.data.BoxRepository
 import com.fvbox.lib.FCore
 import com.fvbox.lib.abs.ApplicationCallback
+import com.fvbox.llk.utils.SpUtil
 import com.fvbox.util.ContextHolder
 
 class BoxApplication : Application() {
@@ -19,6 +20,7 @@ class BoxApplication : Application() {
         FCore.get().init(this, true)
         ContextHolder.init(base)
         if (FCore.isHost()) {
+            SpUtil.init(this)
             BoxRepository.initLocalAppList()
         } else {
             BoxConfigLoader.loadRule()
