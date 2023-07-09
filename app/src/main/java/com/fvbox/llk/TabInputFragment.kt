@@ -2,6 +2,7 @@ package com.fvbox.llk
 
 import android.Manifest
 import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -17,6 +18,7 @@ import com.uuzuche.lib_zxing.activity.CodeUtils
 
 class TabInputFragment : Fragment(R.layout.fragment_homt_tab_input), View.OnClickListener {
 
+    private var waveView: WaveView? = null
 
     private fun performNextStep(inputMsg: String?){
         if (inputMsg.isNullOrEmpty()){
@@ -30,7 +32,15 @@ class TabInputFragment : Fragment(R.layout.fragment_homt_tab_input), View.OnClic
         val v = super.onCreateView(inflater, container, savedInstanceState)
         v?.findViewById<ImageView>(R.id.ivAdd)?.setOnClickListener(this)
         v?.findViewById<ImageView>(R.id.ivScan)?.setOnClickListener(this)
+        waveView = v?.findViewById(R.id.waveView)
         return v
+    }
+
+    private fun updateProgress(progress: Float){
+        waveView?.apply {
+            precent = progress
+            start()
+        }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
