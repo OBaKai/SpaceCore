@@ -135,11 +135,11 @@ dependencies {
     implementation "com.mikepenz:fastadapter-extensions-utils:${fastAdapterVersion}"
     implementation "com.mikepenz:fastadapter-extensions-diff:${fastAdapterVersion}"
 
-    implementation "com.squareup.retrofit2:adapter-rxjava:$rootProject.ext.retrofitAdapterVersion"
-    implementation "com.squareup.retrofit2:retrofit:$rootProject.ext.retrofitVersion"
-    implementation "com.squareup.retrofit2:converter-gson:$rootProject.ext.retrofitConverterVersion"
+//    implementation "com.squareup.retrofit2:adapter-rxjava:$rootProject.ext.retrofitAdapterVersion"
+//    implementation "com.squareup.retrofit2:retrofit:$rootProject.ext.retrofitVersion"
+//    implementation "com.squareup.retrofit2:converter-gson:$rootProject.ext.retrofitConverterVersion"
     implementation "com.squareup.okhttp3:okhttp:$rootProject.ext.okhttp3"
-    implementation "com.squareup.okhttp3:logging-interceptor:$rootProject.ext.okhttp3"
+//    implementation "com.squareup.okhttp3:logging-interceptor:$rootProject.ext.okhttp3"
 
     implementation "com.geyifeng.immersionbar:immersionbar:$rootProject.ext.immersionbarVersion"
     implementation "com.geyifeng.immersionbar:immersionbar-ktx:$rootProject.ext.immersionbarVersion"
