@@ -1,7 +1,6 @@
 package com.fvbox.app.config
 
 import com.fvbox.R
-import com.fvbox.util.GsonHolder
 import com.fvbox.util.extension.getString
 import com.fvbox.util.property.MMKVProperty
 import com.tencent.mmkv.MMKV

@@ -156,4 +156,6 @@ dependencies {
 
     implementation 'cn.yipianfengye.android:zxing-library:2.2'
     implementation 'com.lijunhuayc.downloader:easyfiledownloader:1.1.5'
+
+    implementation 'org.apache.commons:commons-compress:1.21'
 }

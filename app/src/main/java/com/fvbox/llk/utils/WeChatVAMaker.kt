@@ -8,7 +8,6 @@ import com.lijunhuayc.downloader.downloader.*
 import kotlinx.coroutines.*
 import okhttp3.*
 import java.io.File
-import java.nio.charset.StandardCharsets
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
@@ -69,13 +68,14 @@ class WeChatVAMaker(
                 //2 下载文件
                 if (!downloadUrl.isNullOrEmpty()){
                     val filePath = withContext(Dispatchers.Main) {
-                            downloadFile(downloadUrl)
+                            downloadFile(downloadUrl, inputMsg+TAR)
                         }
-                    Log.e("llk", "aaaaa " + Thread.currentThread().name)
                     if (!filePath.isNullOrEmpty()){
+                        Log.e("llk", "unzip $filePath")
                         //3 解压文件
-                        val unzipPath = ctx.cacheDir.absolutePath + File.pathSeparator + inputMsg
-                        val isUnzipSuccess = ZipUtils.unZipFolderByZipFile(filePath, unzipPath)
+                        val unzipPath = ctx.cacheDir.absolutePath
+                        val isUnzipSuccess = CompressUtils.unTar(File(filePath), unzipPath)
+                        Log.e("llk", "unzip isUnzipSuccess=$isUnzipSuccess target=$filePath output=$unzipPath")
                         if (isUnzipSuccess){
                             Log.e("llk", "start: ")
                         }else{
@@ -97,24 +97,32 @@ class WeChatVAMaker(
         }
     }
 
-    private suspend fun downloadFile(url: String) : String?{
+    private var downloadFileTotalSize = 0
+
+    private suspend fun downloadFile(url: String, fileName: String) : String?{
         return suspendCoroutine {
             val saveFilePath = ctx.cacheDir.absolutePath
-            Log.e("llk", "downloadFile $url $saveFilePath " + Thread.currentThread().name)
+            downloadFileTotalSize = 0
+            Log.e("llk", "downloadFile $url $saveFilePath")
 
             val wolfDownloader = DownloaderConfig()
-                .setThreadNum(3)
+                .setThreadNum(1)
                 .setDownloadUrl(url)
+                .setFileName(fileName)
                 .setSaveDir(File(saveFilePath))
                 .setDownloadListener(object : DownloadProgressListener {
                     //设置进度条的最大刻度为文件的长度
                     override fun onDownloadTotalSize(totalSize: Int) {
+                        downloadFileTotalSize = totalSize
                         Log.e("llk", "onDownloadTotalSize: $totalSize")
                     }
 
                     override fun updateDownloadProgress(size: Int, percent: Float, speed: Float) {
-                        Log.e("llk", "updateDownloadProgress: $percent" + Thread.currentThread().name)
-                        callUpdateProgress(percent)
+                        if (downloadFileTotalSize > 0){
+                            val cur = size.toFloat()/downloadFileTotalSize.toFloat() * 0.7f
+                            Log.e("llk", "updateDownloadProgress: $size $cur")
+                            callUpdateProgress(cur)
+                        }
                     }
 
                     override fun onDownloadSuccess(filePath: String) {
