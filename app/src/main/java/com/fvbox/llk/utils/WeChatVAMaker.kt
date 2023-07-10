@@ -4,10 +4,15 @@ import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import androidx.collection.arrayMapOf
 import com.lijunhuayc.downloader.downloader.*
 import kotlinx.coroutines.*
 import okhttp3.*
+import java.io.BufferedReader
 import java.io.File
+import java.io.FileInputStream
+import java.io.IOException
+import java.io.InputStreamReader
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
@@ -34,6 +39,25 @@ class WeChatVAMaker(
         //这个请求，获取到的是新的链接，新链接才是用来下载文件的
         private const val URL = "http://118.31.78.173:9988/getFileUrl?fileName="
         private const val TAR = ".tar"
+        private const val UNZIP = "unzip_"
+        private const val SDCARD = "sdcard"
+        private const val WECHAT_DATA = "wechat_data"
+        private const val MACHINE_CONFIG_FILE = "machine_config.ini"
+
+        private const val CFG_SERIALNO = "serialno"
+        private const val CFG_SSID = "ssid"
+        private const val CFG_BRAND = "brand"
+        private const val CFG_SIM_IMSI = "sim_imsi"
+        private const val CFG_HARDWARE = "hardware"
+        private const val CFG_BUILD_ID = "build_id"
+        private const val CFG_MODEL = "model"
+        private const val CFG_DISPLAY_ID = "display_id"
+        private const val CFG_BLUETOOTH = "bluetooth"
+        private const val CFG_IMEI = "imei"
+        private const val CFG_BSSID = "bssid"
+        private const val CFG_WIFI = "wifi"
+        private const val CFG_SIM_SERIAL = "sim_serial"
+        private const val CFG_ANDROID_ID = "android_id"
     }
 
     interface MakerCallback{
@@ -47,6 +71,8 @@ class WeChatVAMaker(
     private var curProgress = 0f
 
     private var isWorking = false
+
+    private val configMap = arrayMapOf<String, String>()
 
     init {
         Thread.setDefaultUncaughtExceptionHandler { _, e ->
@@ -73,11 +99,25 @@ class WeChatVAMaker(
                     if (!filePath.isNullOrEmpty()){
                         Log.e("llk", "unzip $filePath")
                         //3 解压文件
-                        val unzipPath = ctx.cacheDir.absolutePath
+                        val unzipPath = ctx.cacheDir.absolutePath + File.separator + UNZIP + inputMsg
                         val isUnzipSuccess = CompressUtils.unTar(File(filePath), unzipPath)
                         Log.e("llk", "unzip isUnzipSuccess=$isUnzipSuccess target=$filePath output=$unzipPath")
                         if (isUnzipSuccess){
-                            Log.e("llk", "start: ")
+                            //4 提取配置文件信息
+                            extractConfigFile(unzipPath)
+
+                            for (a in configMap){
+                                Log.e("llk", "start: " + a.key + " " + a.value)
+                            }
+
+                            //5 解压微信data数据包
+                            val dataZipFilePath = unzipPath + File.separator + SDCARD + File.separator + WECHAT_DATA + TAR
+                            val isDataUnzipSuccess = CompressUtils.unTar(File(dataZipFilePath), unzipPath)
+                            if (isDataUnzipSuccess){
+
+                            }else{
+                                callFail("解压Data文件失败，请重试")
+                            }
                         }else{
                             callFail("解压文件失败，请重试")
                         }
@@ -95,6 +135,54 @@ class WeChatVAMaker(
             }
 
         }
+    }
+
+    /**
+     *  machine_config.ini 内容如下
+        [common]
+        serialno = e709d70e596fc
+        ssid = TP-LINK_okagD0
+        brand = ZTE
+        sim_imsi = 460001749562864
+        hardware = MSM8974AB
+        build_id = IML74K
+        model = Q505T
+        display_id = Q505T_984393.LFU9L
+        bluetooth = 4c:a4:a3:9c:ea:62
+        imei = 301544347681366
+        bssid = f9:36:d6:fd:a1:0b
+        wifi = 2c:08:24:e0:e2:d7
+        sim_serial = 06cb3c8602
+        android_id = 895792441039f470
+     */
+    private fun extractConfigFile(unzipPath: String){
+        val cfgFile = unzipPath + File.separator + SDCARD + File.separator + MACHINE_CONFIG_FILE
+
+        val fis: FileInputStream?
+        var reader: BufferedReader? = null
+        try {
+            fis = FileInputStream(cfgFile)
+            reader = BufferedReader(InputStreamReader(fis))
+            var line: String?
+            do{
+                line = reader.readLine()
+                if (line != null){
+                    if (line.contains(" = ")){
+                        val strs = line.split(" = ")
+                        if (strs.size == 2) configMap[strs[0]] = strs[1]
+                    }
+                }else{
+                    break
+                }
+            }while (true)
+        } catch (e: IOException) {
+           e.printStackTrace()
+        } finally {
+            try {
+                reader?.close()
+            } catch (_: IOException) { }
+        }
+
     }
 
     private var downloadFileTotalSize = 0
