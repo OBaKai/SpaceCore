@@ -1,10 +1,11 @@
-package com.fvbox.llk.utils
+package com.fvbox.llk
 
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import androidx.collection.arrayMapOf
+import com.fvbox.llk.utils.CompressUtils
 import com.lijunhuayc.downloader.downloader.*
 import kotlinx.coroutines.*
 import okhttp3.*

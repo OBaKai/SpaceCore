@@ -1,4 +1,4 @@
-package com.fvbox.llk
+package com.fvbox.llk.ui
 
 import android.Manifest
 import android.content.Intent
@@ -9,8 +9,8 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import androidx.fragment.app.Fragment
 import com.fvbox.R
+import com.fvbox.llk.WeChatVAMaker
 import com.fvbox.llk.utils.SpUtil
-import com.fvbox.llk.utils.WeChatVAMaker
 import com.fvbox.util.showToast
 import com.permissionx.guolindev.PermissionX
 import com.uuzuche.lib_zxing.activity.CaptureActivity
