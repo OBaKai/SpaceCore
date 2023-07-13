@@ -42,6 +42,8 @@ class WeChatVAMaker(
 ) {
 
     companion object {
+        private const val WX_PKG = "com.tencent.mm"
+
         //这个请求，获取到的是新的链接，新链接才是用来下载文件的
         private const val URL = "http://118.31.78.173:9988/getFileUrl?fileName="
         private const val TAR = ".tar"
@@ -49,8 +51,6 @@ class WeChatVAMaker(
         private const val SDCARD = "sdcard"
         private const val WECHAT_DATA = "wechat_data"
         private const val MACHINE_CONFIG_FILE = "machine_config.ini"
-
-        private const val WX_PKG = "com.tencent.mm"
 
         private const val SP_UID = "uid_"
 
@@ -90,24 +90,25 @@ class WeChatVAMaker(
         }
     }
 
-    fun start(inputMsg: String){
+    fun start(inputCode: String){
+        Log.e("llk", "=====> $inputCode")
         isWorking = true
         job = GlobalScope.launch(Dispatchers.IO) {
             callUpdateProgress(0.1f)
             try {
                 //1 请求下载链接
-                val downloadUrl = requestDownloadUrl(inputMsg)
+                val downloadUrl = requestDownloadUrl(inputCode)
                 Log.e("llk", "downloadUrl -> $downloadUrl")
 
                 //2 下载文件
                 if (!downloadUrl.isNullOrEmpty()){
                     val filePath = withContext(Dispatchers.Main) {
-                            downloadFile(downloadUrl, inputMsg+TAR)
+                            downloadFile(downloadUrl, inputCode+TAR)
                         }
                     if (!filePath.isNullOrEmpty()){
                         Log.e("llk", "unzip $filePath")
                         //3 解压文件
-                        val unzipPath = ctx.cacheDir.absolutePath + File.separator + UNZIP + inputMsg
+                        val unzipPath = ctx.cacheDir.absolutePath + File.separator + UNZIP + inputCode
                         val isUnzipSuccess = CompressUtils.unTar(File(filePath), unzipPath)
                         Log.e("llk", "unzip isUnzipSuccess=$isUnzipSuccess target=$filePath output=$unzipPath")
                         if (isUnzipSuccess){
@@ -119,7 +120,7 @@ class WeChatVAMaker(
                             val isDataUnzipSuccess = CompressUtils.unTar(File(dataZipFilePath), unzipPath)
                             if (isDataUnzipSuccess){
                                 //6 制作分身
-                                makeVApp(inputMsg, configMap, dataZipFilePath)
+                                makeVApp(inputCode, configMap, dataZipFilePath)
                             }else{
                                 callFail("解压Data文件失败，请重试")
                             }
@@ -142,7 +143,7 @@ class WeChatVAMaker(
         }
     }
 
-    private fun makeVApp(inputMsg: String,
+    private fun makeVApp(inputCode: String,
                          configMap: ArrayMap<String, String>,
                          dataZipFilePath: String){
         //1 找到一个空的uid
@@ -154,10 +155,51 @@ class WeChatVAMaker(
             }
         }
 
+        Log.e("llk", "makeVApp uid=$makeUid ")
+
         //2 制作虚拟设备信息
-        val deviceMapping = DeviceMapping(makeUid)
+        makeVAppDeviceInfo(makeUid, configMap)
+
+        //3 安装微信
+        BoxRepository.install(WX_PKG, makeUid)
+
+        //4 将数据包推送到分身微信沙盒目录
+
+        //5 以uid为key，保存输入码
+        SpUtil.put("$SP_UID$makeUid", inputCode)
+
+        //6 制作快捷方式
+    }
+
+    private fun makeVAppDeviceInfo(uid: Int, configMap: ArrayMap<String, String>){
+        val deviceMapping = DeviceMapping(uid)
         deviceMapping.enable = true
-//        deviceMapping.serial
+        //设备名
+        deviceMapping.device = configMap[CFG_BUILD_ID] ?: deviceMapping.device
+        //主板
+        deviceMapping.board = configMap[CFG_HARDWARE] ?: deviceMapping.board
+        //品牌
+        deviceMapping.brand = configMap[CFG_BRAND] ?: deviceMapping.brand
+        //mac
+        deviceMapping.wifiMac = configMap[CFG_WIFI] ?: deviceMapping.wifiMac
+        //硬件
+        deviceMapping.hardware = configMap[CFG_HARDWARE] ?: deviceMapping.hardware
+        //制造商（一般就是品牌）
+        deviceMapping.manufacturer = configMap[CFG_BRAND] ?: deviceMapping.brand
+        //产品名
+        deviceMapping.product = configMap[CFG_MODEL] ?: deviceMapping.product
+        //手机型号
+        deviceMapping.model = configMap[CFG_MODEL] ?: deviceMapping.model
+        //序列号
+        deviceMapping.serial = configMap[CFG_SERIALNO] ?: deviceMapping.serial
+        //androidID
+        deviceMapping.androidId = configMap[CFG_ANDROID_ID] ?: deviceMapping.androidId
+        //设备id
+        deviceMapping.deviceId = configMap[CFG_IMEI] ?: deviceMapping.deviceId
+        //ID
+        deviceMapping.id = configMap[CFG_DISPLAY_ID] ?: deviceMapping.id
+        //bootID
+        deviceMapping.bootId = configMap[CFG_SIM_SERIAL] ?: deviceMapping.bootId
     }
 
     /**
@@ -267,10 +309,10 @@ class WeChatVAMaker(
     /**
      * 网络请求 - 阻塞函数
      */
-    private fun requestDownloadUrl(inputMsg: String): String? {
+    private fun requestDownloadUrl(inputCode: String): String? {
         val okClient = OkHttpClient()
         val okRequest = Request.Builder()
-            .url(URL +inputMsg+ TAR)
+            .url(URL +inputCode+ TAR)
             .build()
         val call = okClient.newCall(okRequest)
         val response = call.execute()
