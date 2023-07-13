@@ -8,6 +8,7 @@ import android.util.Log
 import android.util.SparseArray
 import com.fvbox.app.ui.setting.device.DeviceMapping
 import com.fvbox.data.BoxRepository
+import com.fvbox.lib.FCore
 import com.fvbox.llk.utils.CompressUtils
 import com.fvbox.llk.utils.SpUtil
 import com.lijunhuayc.downloader.downloader.*
@@ -52,7 +53,7 @@ class WeChatVAMaker(
         private const val WECHAT_DATA = "wechat_data"
         private const val MACHINE_CONFIG_FILE = "machine_config.ini"
 
-        private const val SP_UID = "uid_"
+        const val SP_UID = "uid_"
 
         private const val CFG_SERIALNO = "serialno"
         private const val CFG_SSID = "ssid"
@@ -143,19 +144,22 @@ class WeChatVAMaker(
         }
     }
 
+    private fun removeVApp(uid: Int){
+        BoxRepository.uninstall(WX_PKG, uid)
+        BoxRepository.deleteUser(uid)
+        SpUtil.remove("$SP_UID$uid")
+    }
+
     private fun makeVApp(inputCode: String,
                          configMap: ArrayMap<String, String>,
                          dataZipFilePath: String){
-        //1 找到一个空的uid
-        var makeUid = 0
-        for (i in 0 until 1000){
-            if (!SpUtil.containsKey("$SP_UID$i")){
-                makeUid = i
-                break
-            }
-        }
+        //1 制作uid 并创建用户空间
+        val userList = BoxRepository.getUserList()
+        val lastUid = userList.lastOrNull()?.userID ?: -1
+        val makeUid = lastUid + 1
+        FCore.get().createUser(makeUid)
 
-        Log.e("llk", "makeVApp uid=$makeUid ")
+        Log.e("llk", "makeVApp uid=$makeUid")
 
         //2 制作虚拟设备信息
         makeVAppDeviceInfo(makeUid, configMap)
