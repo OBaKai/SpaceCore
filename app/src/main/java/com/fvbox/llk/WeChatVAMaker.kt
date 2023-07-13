@@ -3,9 +3,13 @@ package com.fvbox.llk
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
+import android.util.ArrayMap
 import android.util.Log
-import androidx.collection.arrayMapOf
+import android.util.SparseArray
+import com.fvbox.app.ui.setting.device.DeviceMapping
+import com.fvbox.data.BoxRepository
 import com.fvbox.llk.utils.CompressUtils
+import com.fvbox.llk.utils.SpUtil
 import com.lijunhuayc.downloader.downloader.*
 import kotlinx.coroutines.*
 import okhttp3.*
@@ -14,6 +18,7 @@ import java.io.File
 import java.io.FileInputStream
 import java.io.IOException
 import java.io.InputStreamReader
+import java.util.Hashtable
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
@@ -45,6 +50,10 @@ class WeChatVAMaker(
         private const val WECHAT_DATA = "wechat_data"
         private const val MACHINE_CONFIG_FILE = "machine_config.ini"
 
+        private const val WX_PKG = "com.tencent.mm"
+
+        private const val SP_UID = "uid_"
+
         private const val CFG_SERIALNO = "serialno"
         private const val CFG_SSID = "ssid"
         private const val CFG_BRAND = "brand"
@@ -72,8 +81,6 @@ class WeChatVAMaker(
     private var curProgress = 0f
 
     private var isWorking = false
-
-    private val configMap = arrayMapOf<String, String>()
 
     init {
         Thread.setDefaultUncaughtExceptionHandler { _, e ->
@@ -105,17 +112,14 @@ class WeChatVAMaker(
                         Log.e("llk", "unzip isUnzipSuccess=$isUnzipSuccess target=$filePath output=$unzipPath")
                         if (isUnzipSuccess){
                             //4 提取配置文件信息
-                            extractConfigFile(unzipPath)
-
-                            for (a in configMap){
-                                Log.e("llk", "start: " + a.key + " " + a.value)
-                            }
+                            val configMap = extractConfigFile(unzipPath)
 
                             //5 解压微信data数据包
                             val dataZipFilePath = unzipPath + File.separator + SDCARD + File.separator + WECHAT_DATA + TAR
                             val isDataUnzipSuccess = CompressUtils.unTar(File(dataZipFilePath), unzipPath)
                             if (isDataUnzipSuccess){
-
+                                //6 制作分身
+                                makeVApp(inputMsg, configMap, dataZipFilePath)
                             }else{
                                 callFail("解压Data文件失败，请重试")
                             }
@@ -138,6 +142,24 @@ class WeChatVAMaker(
         }
     }
 
+    private fun makeVApp(inputMsg: String,
+                         configMap: ArrayMap<String, String>,
+                         dataZipFilePath: String){
+        //1 找到一个空的uid
+        var makeUid = 0
+        for (i in 0 until 1000){
+            if (!SpUtil.containsKey("$SP_UID$i")){
+                makeUid = i
+                break
+            }
+        }
+
+        //2 制作虚拟设备信息
+        val deviceMapping = DeviceMapping(makeUid)
+        deviceMapping.enable = true
+//        deviceMapping.serial
+    }
+
     /**
      *  machine_config.ini 内容如下
         [common]
@@ -156,7 +178,9 @@ class WeChatVAMaker(
         sim_serial = 06cb3c8602
         android_id = 895792441039f470
      */
-    private fun extractConfigFile(unzipPath: String){
+    private fun extractConfigFile(unzipPath: String) : ArrayMap<String, String> {
+        val configMap = ArrayMap<String, String>()
+
         val cfgFile = unzipPath + File.separator + SDCARD + File.separator + MACHINE_CONFIG_FILE
 
         val fis: FileInputStream?
@@ -184,6 +208,7 @@ class WeChatVAMaker(
             } catch (_: IOException) { }
         }
 
+        return configMap
     }
 
     private var downloadFileTotalSize = 0

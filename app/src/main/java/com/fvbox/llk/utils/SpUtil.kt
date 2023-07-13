@@ -27,6 +27,8 @@ object SpUtil {
         }
     }
 
+    fun containsKey(key: String): Boolean = mmkv.containsKey(key)
+
     fun <T : Parcelable> put(key: String, t: T?) {
         if (t == null) {
             return
