@@ -167,6 +167,11 @@ class TabListFragment : Fragment(R.layout.fragment_homt_tab_list) {
             withContext(Dispatchers.Main){
                 listAdapter.removeData(pos)
                 isRemoveing = false
+
+                if (listAdapter.itemCount == 0){
+                    listView?.isVisible = false
+                    tvEmpty?.isVisible = true
+                }
             }
         }
     }

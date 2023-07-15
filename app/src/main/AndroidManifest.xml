@@ -32,14 +32,20 @@
         <activity
             android:name=".llk.ui.HomeActivity"
             android:exported="false" />
-        <service android:name=".llk.ShortcutService"
-            android:exported="false"
-            android:enabled="true"
+
+        <activity
+            android:excludeFromRecents="true"
+            android:name=".llk.ShortcutActivity"
+            android:exported="true"
+            android:taskAffinity="va.shortcut.task"
             >
             <intent-filter>
-                <action android:name="llk.wx.ShortcutService" />
+                <action android:name="${applicationId}.va.action.shortcut" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
             </intent-filter>
-        </service>
+        </activity>
 
         <activity
             android:name=".app.ui.main.MainActivity"

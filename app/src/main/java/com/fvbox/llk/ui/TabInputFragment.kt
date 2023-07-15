@@ -49,6 +49,7 @@ class TabInputFragment : Fragment(R.layout.fragment_homt_tab_input), View.OnClic
             return
         }
 
+        updateProgress(0f)
         maker.start(inputMsg)
     }
 

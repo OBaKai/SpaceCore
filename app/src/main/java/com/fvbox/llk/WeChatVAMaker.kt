@@ -95,6 +95,7 @@ class WeChatVAMaker(
     fun start(inputCode: String){
         log("start =====> $inputCode")
         isWorking = true
+        curProgress = 0f
         job = GlobalScope.launch(Dispatchers.IO) {
             callUpdateProgress(0.1f)
             try {

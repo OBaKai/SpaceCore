@@ -9,7 +9,6 @@ import android.graphics.drawable.Drawable
 import androidx.core.content.pm.ShortcutInfoCompat
 import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.graphics.drawable.IconCompat
-import com.fvbox.llk.ShortcutService
 
 
 object ShortcutHelper {
@@ -23,8 +22,8 @@ object ShortcutHelper {
         if (ShortcutManagerCompat.isRequestPinShortcutSupported(ctx)) {
             val intent = Intent()
             intent.`package` = ctx.packageName
-            intent.action = "llk.wx.ShortcutService"
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) //设不设置都行
+            intent.action = "${ctx.packageName}.va.action.shortcut"
+            intent.addCategory(Intent.CATEGORY_DEFAULT)
             intent.putExtra("uid", uid)
 
             val pinShortcutInfo = ShortcutInfoCompat.Builder(ctx, uid.toString())

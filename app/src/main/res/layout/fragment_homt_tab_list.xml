@@ -51,7 +51,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         android:textColor="@color/black"
         android:background="@color/white"
-        android:textSize="30sp"
+        android:textSize="24dp"
         android:text="暂无分身"
         android:gravity="center"
         android:visibility="gone"
