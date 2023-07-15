@@ -73,7 +73,7 @@ class TabListFragment : Fragment(R.layout.fragment_homt_tab_list) {
                 holder.icon.setImageDrawable(item.icon)
 
                 val inputCode = SpUtil.getString("${WeChatVAMaker.SP_UID}${item.userID}")
-                holder.name.text = "${item.name}${inputCode}"
+                holder.name.text = "${item.name}${inputCode ?: ""}"
 
                 holder.layout.setOnClickListener {
                     itemClick?.invoke(position)
@@ -86,13 +86,6 @@ class TabListFragment : Fragment(R.layout.fragment_homt_tab_list) {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val v = super.onCreateView(inflater, container, savedInstanceState)
         listView = v?.findViewById(R.id.listView)
-        tvEmpty = v?.findViewById(R.id.tvEmpty)
-        return v
-    }
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
         listView?.apply {
             layoutManager = LinearLayoutManager(requireContext(), RecyclerView.VERTICAL, false)
             adapter = listAdapter
@@ -102,6 +95,22 @@ class TabListFragment : Fragment(R.layout.fragment_homt_tab_list) {
                 BoxRepository.launchApp(data.pkg, data.userID)
             }
         }
+
+        tvEmpty = v?.findViewById(R.id.tvEmpty)
+        return v
+    }
+
+    override fun onResume() {
+        super.onResume()
+        loadData()
+    }
+
+    private var isLoading = false
+
+    private fun loadData(){
+        if (isLoading) return
+
+        isLoading = true
 
         GlobalScope.launch(Dispatchers.IO) {
             val appList = mutableListOf<BoxAppBean>()
@@ -126,6 +135,7 @@ class TabListFragment : Fragment(R.layout.fragment_homt_tab_list) {
                     tvEmpty?.isVisible = false
                     listAdapter.setDatas(appList)
                 }
+                isLoading = false
             }
         }
     }

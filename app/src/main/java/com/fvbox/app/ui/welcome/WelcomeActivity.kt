@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Bundle
 import com.fvbox.R
 import com.fvbox.app.base.BaseActivity
+import com.fvbox.app.ui.main.MainActivity
 import com.fvbox.llk.ui.HomeActivity
 import com.fvbox.util.showToast
 import com.permissionx.guolindev.PermissionX
