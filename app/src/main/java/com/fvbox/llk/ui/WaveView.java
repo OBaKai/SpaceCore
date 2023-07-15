@@ -700,6 +700,8 @@ public class WaveView extends View {
                 mWavePath2.quadTo((-mWaveLenght2 * 1 / 4) + (i * mWaveLenght2) + mMoveSum2, mChangeY + mWaveHeight2, (i * mWaveLenght2) + mMoveSum2, mChangeY);
             }
 
+            mFinalY = (1 - mPrecent) * mHeight; // 计算水位最终高度
+
             // 不断改变高度，实现逐渐水位逐渐上涨效果
             mChangeY -= 1;
             if (mChangeY < mFinalY) mChangeY = mFinalY;

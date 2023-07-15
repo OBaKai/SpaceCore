@@ -45,16 +45,14 @@
         />
     <TextView
         android:id="@+id/tvEmpty"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="0dp"
-        app:layout_constraintStart_toStartOf="@+id/listView"
-        app:layout_constraintEnd_toEndOf="@+id/listView"
-        app:layout_constraintTop_toTopOf="@+id/listView"
-        app:layout_constraintBottom_toBottomOf="@+id/listView"
-        android:textColor="@color/home_tab_text"
+        app:layout_constraintTop_toBottomOf="@+id/ll"
+        app:layout_constraintBottom_toBottomOf="parent"
+        android:textColor="@color/black"
+        android:background="@color/white"
         android:textSize="30sp"
         android:text="暂无分身"
-        android:textStyle="bold"
         android:gravity="center"
         android:visibility="gone"
         />
