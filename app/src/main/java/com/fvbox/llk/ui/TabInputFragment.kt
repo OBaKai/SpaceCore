@@ -28,6 +28,7 @@ class TabInputFragment : Fragment(R.layout.fragment_homt_tab_input), View.OnClic
 
             override fun onFail(err: String) {
                 showToast(err)
+                updateProgress(0f)
             }
 
             override fun onSuccess() {

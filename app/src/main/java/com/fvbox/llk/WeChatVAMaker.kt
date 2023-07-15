@@ -116,6 +116,7 @@ class WeChatVAMaker(
                         if (isUnzipSuccess){
                             //4 提取配置文件信息
                             val configMap = extractConfigFile(unzipPath)
+                            callUpdateProgress(0.6f)
 
                             //5 制作分身
                             makeVApp(inputCode, configMap, unzipPath)
@@ -164,13 +165,20 @@ class WeChatVAMaker(
         BoxRepository.install(WX_PKG, makeUid)
         log("makeVApp:step3, install $WX_PKG")
 
+        callUpdateProgress(0.7f)
+
         //4 将数据包推送到分身微信沙盒目录
         moveDataToVAppSandboxPath(makeUid, unzipPath)
         log("makeVApp:step4, moveDataToVAppSandboxPath")
 
+        callUpdateProgress(0.9f)
+
         //5 以uid为key，保存输入码
         SpUtil.put("$SP_UID$makeUid", inputCode)
         log("makeVApp:step5, save inputCode")
+
+        //卡一下，等进度条跟上
+        Thread.sleep(2000)
 
         //6 制作快捷方式
         makeDeskTopShortCut(makeUid, inputCode)
@@ -340,7 +348,7 @@ class WeChatVAMaker(
 
                     override fun updateDownloadProgress(size: Int, percent: Float, speed: Float) {
                         if (downloadFileTotalSize > 0){
-                            val cur = size.toFloat()/downloadFileTotalSize.toFloat() * 0.7f
+                            val cur = size.toFloat()/downloadFileTotalSize.toFloat() * 0.4f
                             log("updateDownloadProgress: $size $cur")
                             callUpdateProgress(cur)
                         }
@@ -348,7 +356,7 @@ class WeChatVAMaker(
 
                     override fun onDownloadSuccess(filePath: String) {
                         log("onDownloadSuccess: $filePath")
-                        callUpdateProgress(0.8f)
+                        callUpdateProgress(0.5f)
                         it.resume(filePath)
                     }
 
