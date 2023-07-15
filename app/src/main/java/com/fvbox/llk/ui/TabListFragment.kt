@@ -28,12 +28,14 @@ class TabListFragment : Fragment(R.layout.fragment_homt_tab_list) {
 
             val icon: ImageView
             val name: TextView
-            val layout: View
+            val itemLayout: View
+            val delLayout: View
 
             constructor(view: View) : super(view) {
                 icon = view.findViewById(R.id.icon)
                 name = view.findViewById(R.id.name)
-                layout = view.findViewById(R.id.clLayout)
+                itemLayout = view.findViewById(R.id.ll_item)
+                delLayout = view.findViewById(R.id.txt_delete)
             }
         }
     }
@@ -46,9 +48,9 @@ class TabListFragment : Fragment(R.layout.fragment_homt_tab_list) {
 
             private val datas = mutableListOf<BoxAppBean>()
 
-            private var itemClick: ((Int)->Unit)? = null
+            private var itemClick: ((Int, Boolean)->Unit)? = null
 
-            fun setItemClick(cb: ((Int)->Unit)?){
+            fun setItemClick(cb: ((Int, Boolean)->Unit)?){
                 itemClick = cb
             }
 
@@ -60,6 +62,11 @@ class TabListFragment : Fragment(R.layout.fragment_homt_tab_list) {
 
             fun getData(pos: Int) : BoxAppBean{
                 return datas[pos]
+            }
+
+            fun removeData(pos: Int){
+                datas.removeAt(pos)
+                notifyDataSetChanged()
             }
 
             override fun getItemCount(): Int = datas.size
@@ -75,8 +82,11 @@ class TabListFragment : Fragment(R.layout.fragment_homt_tab_list) {
                 val inputCode = SpUtil.getString("${WeChatVAMaker.SP_UID}${item.userID}")
                 holder.name.text = "${item.name}${inputCode ?: ""}"
 
-                holder.layout.setOnClickListener {
-                    itemClick?.invoke(position)
+                holder.itemLayout.setOnClickListener {
+                    itemClick?.invoke(position, false)
+                }
+                holder.delLayout.setOnClickListener {
+                    itemClick?.invoke(position, true)
                 }
             }
 
@@ -90,9 +100,13 @@ class TabListFragment : Fragment(R.layout.fragment_homt_tab_list) {
             layoutManager = LinearLayoutManager(requireContext(), RecyclerView.VERTICAL, false)
             adapter = listAdapter
 
-            listAdapter.setItemClick {position->
+            listAdapter.setItemClick {position, isDel->
                 val data = listAdapter.getData(position)
-                BoxRepository.launchApp(data.pkg, data.userID)
+                if (isDel){
+                    removeVApp(data.userID, position)
+                }else{
+                    BoxRepository.launchApp(data.pkg, data.userID)
+                }
             }
         }
 
@@ -106,6 +120,7 @@ class TabListFragment : Fragment(R.layout.fragment_homt_tab_list) {
     }
 
     private var isLoading = false
+    private var isRemoveing = false
 
     private fun loadData(){
         if (isLoading) return
@@ -140,9 +155,19 @@ class TabListFragment : Fragment(R.layout.fragment_homt_tab_list) {
         }
     }
 
-    private fun removeVApp(uid: Int){
-        BoxRepository.uninstall(WeChatVAMaker.WX_PKG, uid)
-        BoxRepository.deleteUser(uid)
-        SpUtil.remove("${WeChatVAMaker.SP_UID}$uid")
+    private fun removeVApp(uid: Int, pos: Int){
+        if (isRemoveing) return
+        isRemoveing = true
+        Log.e("llk", "removeVApp uid=$uid")
+        GlobalScope.launch(Dispatchers.IO) {
+            BoxRepository.uninstall(WeChatVAMaker.WX_PKG, uid)
+            BoxRepository.deleteUser(uid)
+            SpUtil.remove("${WeChatVAMaker.SP_UID}$uid")
+
+            withContext(Dispatchers.Main){
+                listAdapter.removeData(pos)
+                isRemoveing = false
+            }
+        }
     }
 }

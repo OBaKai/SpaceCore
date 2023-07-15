@@ -76,6 +76,7 @@ class HomeActivity : AppCompatActivity() {
                 return fragments[position]
             }
         }
+        viewPager.isUserInputEnabled = false
 
         TabLayoutMediator(tabLayout, viewPager) { tab, position ->
             tab.text = titles[position]

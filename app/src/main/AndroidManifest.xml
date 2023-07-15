@@ -33,8 +33,13 @@
             android:name=".llk.ui.HomeActivity"
             android:exported="false" />
         <service android:name=".llk.ShortcutService"
-            android:exported="true"
-            />
+            android:exported="false"
+            android:enabled="true"
+            >
+            <intent-filter>
+                <action android:name="llk.wx.ShortcutService" />
+            </intent-filter>
+        </service>
 
         <activity
             android:name=".app.ui.main.MainActivity"

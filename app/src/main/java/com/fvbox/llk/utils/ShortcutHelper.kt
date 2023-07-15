@@ -21,8 +21,9 @@ object ShortcutHelper {
         icon: Drawable,
     ) {
         if (ShortcutManagerCompat.isRequestPinShortcutSupported(ctx)) {
-            val intent = Intent(ctx, ShortcutService::class.java)
-            intent.action = Intent.ACTION_VIEW  //必须设置，否则报错
+            val intent = Intent()
+            intent.`package` = ctx.packageName
+            intent.action = "llk.wx.ShortcutService"
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) //设不设置都行
             intent.putExtra("uid", uid)
 
