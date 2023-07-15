@@ -2,6 +2,7 @@ package com.fvbox.llk.ui
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
@@ -47,6 +48,12 @@ class HomeActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        immersionBar {
+            statusBarDarkFont(true)
+            statusBarColorInt(Color.parseColor("#D4D3C2"))
+        }
+
         setContentView(R.layout.activity_home)
 
         //扫描二维码库初始化

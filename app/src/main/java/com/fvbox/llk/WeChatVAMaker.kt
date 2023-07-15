@@ -120,7 +120,12 @@ class WeChatVAMaker(
                             makeVApp(inputCode, configMap, unzipPath)
 
                             //6 删除下载以及加压的东西
-                            //getTargetDir(inputCode) 山这个目录
+                            val cacheFile = File(getTargetDir(inputCode))
+                            if (cacheFile.exists()){
+                                cacheFile.delete()
+                            }
+
+                            callSuccess()
                         }else{
                             callFail("解压文件失败，请重试")
                         }
@@ -131,19 +136,13 @@ class WeChatVAMaker(
                     callFail("服务器数据库无此号码，请联系代理！")
                 }
             }catch (e: Exception){
-                log("error !!!")
+                log("error !!!!!! " + e.message)
                 callFail("操作失败，请重试")
                 e.printStackTrace()
                 isWorking = false
             }
 
         }
-    }
-
-    private fun removeVApp(uid: Int){
-        BoxRepository.uninstall(WX_PKG, uid)
-        BoxRepository.deleteUser(uid)
-        SpUtil.remove("$SP_UID$uid")
     }
 
     private fun makeVApp(inputCode: String,

@@ -11,6 +11,6 @@
     <color name="textEditColor">#DE000000</color>
     <color name="textColorSecondary">#8A000000</color>
 
-    <color name="home_tab_text">#bfbfbf</color>
+    <color name="home_tab_text">#8a8a8a</color>
     <color name="home_tab_text_sel">#1296db</color>
 </resources>

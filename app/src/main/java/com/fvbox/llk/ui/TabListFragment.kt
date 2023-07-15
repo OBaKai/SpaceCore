@@ -139,4 +139,10 @@ class TabListFragment : Fragment(R.layout.fragment_homt_tab_list) {
             }
         }
     }
+
+    private fun removeVApp(uid: Int){
+        BoxRepository.uninstall(WeChatVAMaker.WX_PKG, uid)
+        BoxRepository.deleteUser(uid)
+        SpUtil.remove("${WeChatVAMaker.SP_UID}$uid")
+    }
 }

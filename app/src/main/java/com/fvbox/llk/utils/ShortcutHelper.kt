@@ -3,19 +3,23 @@ package com.fvbox.llk.utils
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.graphics.drawable.BitmapDrawable
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.graphics.drawable.Drawable
 import androidx.core.content.pm.ShortcutInfoCompat
 import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.graphics.drawable.IconCompat
 import com.fvbox.llk.ShortcutService
 
+
 object ShortcutHelper {
 
-    fun addDeskTopShortCutCompat(ctx: Context,
-                                 uid: Int,
-                                 name: String,
-                                 icon: Drawable) {
+    fun addDeskTopShortCutCompat(
+        ctx: Context,
+        uid: Int,
+        name: String,
+        icon: Drawable,
+    ) {
         if (ShortcutManagerCompat.isRequestPinShortcutSupported(ctx)) {
             val intent = Intent(ctx, ShortcutService::class.java)
             intent.action = Intent.ACTION_VIEW  //必须设置，否则报错
@@ -26,7 +30,7 @@ object ShortcutHelper {
                 .setShortLabel(name)
                 .setLongLabel(name)
                 .setIcon(
-                    IconCompat.createWithBitmap((icon as BitmapDrawable).bitmap)
+                    IconCompat.createWithBitmap(getBitmapFromDrawable(icon))
                 )
                 .setIntent(intent)
                 .build()
@@ -44,5 +48,18 @@ object ShortcutHelper {
                 successCallback.intentSender
             )
         }
+    }
+
+
+    private fun getBitmapFromDrawable(drawable: Drawable): Bitmap {
+        val bmp = Bitmap.createBitmap(
+            drawable.intrinsicWidth,
+            drawable.intrinsicHeight,
+            Bitmap.Config.ARGB_8888
+        )
+        val canvas = Canvas(bmp)
+        drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight())
+        drawable.draw(canvas)
+        return bmp
     }
 }
