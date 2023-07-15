@@ -178,7 +178,7 @@ class WeChatVAMaker(
         log("makeVApp:step5, save inputCode")
 
         //卡一下，等进度条跟上
-        Thread.sleep(5000)
+        Thread.sleep(3000)
 
         //6 制作快捷方式
         makeDeskTopShortCut(makeUid, inputCode)
