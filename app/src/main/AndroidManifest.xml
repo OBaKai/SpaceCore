@@ -31,6 +31,9 @@
         <activity
             android:name=".llk.ui.HomeActivity"
             android:exported="false" />
+        <service android:name=".llk.ShortcutService"
+            android:exported="true"
+            />
 
         <activity
             android:name=".app.ui.main.MainActivity"

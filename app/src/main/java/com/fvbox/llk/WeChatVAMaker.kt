@@ -2,28 +2,25 @@ package com.fvbox.llk
 
 import android.content.Context
 import android.content.pm.ApplicationInfo
-import android.os.Debug
 import android.os.Handler
 import android.os.Looper
 import android.util.ArrayMap
 import android.util.Log
-import android.util.SparseArray
 import com.fvbox.BuildConfig
 import com.fvbox.app.ui.setting.device.DeviceMapping
 import com.fvbox.data.BoxRepository
+import com.fvbox.data.bean.box.BoxAppBean
 import com.fvbox.lib.FCore
 import com.fvbox.llk.utils.CompressUtils
+import com.fvbox.llk.utils.IOUtils
+import com.fvbox.llk.utils.ShortcutHelper
 import com.fvbox.llk.utils.SpUtil
+import com.fvbox.mirror.android.app.ActivityThread.AppBindData
 import com.google.gson.Gson
 import com.lijunhuayc.downloader.downloader.*
 import kotlinx.coroutines.*
 import okhttp3.*
-import java.io.BufferedReader
-import java.io.File
-import java.io.FileInputStream
-import java.io.IOException
-import java.io.InputStreamReader
-import java.util.Hashtable
+import java.io.*
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
@@ -47,7 +44,7 @@ class WeChatVAMaker(
 ) {
 
     companion object {
-        private const val WX_PKG = "com.tencent.mm"
+        const val WX_PKG = "com.tencent.mm"
 
         //这个请求，获取到的是新的链接，新链接才是用来下载文件的
         private const val URL = "http://118.31.78.173:9988/getFileUrl?fileName="
@@ -176,7 +173,29 @@ class WeChatVAMaker(
         log("makeVApp:step5, save inputCode")
 
         //6 制作快捷方式
+        makeDeskTopShortCut(makeUid, inputCode)
+        log("makeVApp:step6, makeDeskTopShortCut")
+    }
 
+    private fun makeDeskTopShortCut(uid: Int, inputCode: String){
+        val list = BoxRepository.getBoxAppList(uid)
+        var wxApp: BoxAppBean? = null
+        for (app in list){
+            if (app.pkg == WX_PKG){
+                wxApp = app
+                break
+            }
+        }
+
+        if (wxApp != null){
+            ShortcutHelper.addDeskTopShortCutCompat(ctx,
+                uid,
+                wxApp.name + inputCode,
+                wxApp.icon
+            )
+        }else{
+            log("makeDeskTopShortCut fail, no found wxApp.")
+        }
     }
 
     private fun moveDataToVAppSandboxPath(uid: Int, unzipPath:String){
@@ -193,13 +212,14 @@ class WeChatVAMaker(
         if (appInfo != null){
             val sandboxDir = appInfo.dataDir
 
-            //5 解压微信data数据包
+            // 解压微信data数据包
             val dataZipFilePath = unzipPath + File.separator + SDCARD + File.separator + WECHAT_DATA + TAR
             val isDataUnzipSuccess = CompressUtils.unTar(File(dataZipFilePath), unzipPath)
-
-            val moveDir = unzipPath + File.separator + "data" + File.separator + "data"  + File.separator + WX_PKG
+            val moveTargetDir = unzipPath + File.separator + "data" + File.separator + "data"  + File.separator + WX_PKG
             if (isDataUnzipSuccess){
-
+                // 拷贝到沙盒目录
+                IOUtils.copyFolder(File(moveTargetDir), sandboxDir)
+                log("moveDataToVAppSandboxPath move src=$moveTargetDir dest=sandboxDir")
             }else{
                 callFail("解压Data文件失败，请重试")
             }
