@@ -1,16 +1,20 @@
 package com.fvbox.llk
 
 import android.content.Context
+import android.content.pm.ApplicationInfo
+import android.os.Debug
 import android.os.Handler
 import android.os.Looper
 import android.util.ArrayMap
 import android.util.Log
 import android.util.SparseArray
+import com.fvbox.BuildConfig
 import com.fvbox.app.ui.setting.device.DeviceMapping
 import com.fvbox.data.BoxRepository
 import com.fvbox.lib.FCore
 import com.fvbox.llk.utils.CompressUtils
 import com.fvbox.llk.utils.SpUtil
+import com.google.gson.Gson
 import com.lijunhuayc.downloader.downloader.*
 import kotlinx.coroutines.*
 import okhttp3.*
@@ -92,39 +96,34 @@ class WeChatVAMaker(
     }
 
     fun start(inputCode: String){
-        Log.e("llk", "=====> $inputCode")
+        log("start =====> $inputCode")
         isWorking = true
         job = GlobalScope.launch(Dispatchers.IO) {
             callUpdateProgress(0.1f)
             try {
                 //1 请求下载链接
                 val downloadUrl = requestDownloadUrl(inputCode)
-                Log.e("llk", "downloadUrl -> $downloadUrl")
+                log("downloadUrl -> $downloadUrl")
 
                 //2 下载文件
                 if (!downloadUrl.isNullOrEmpty()){
                     val filePath = withContext(Dispatchers.Main) {
-                            downloadFile(downloadUrl, inputCode+TAR)
+                            downloadFile(downloadUrl, inputCode+TAR, inputCode)
                         }
                     if (!filePath.isNullOrEmpty()){
-                        Log.e("llk", "unzip $filePath")
                         //3 解压文件
-                        val unzipPath = ctx.cacheDir.absolutePath + File.separator + UNZIP + inputCode
+                        val unzipPath = getTargetDir(inputCode) + UNZIP + inputCode
                         val isUnzipSuccess = CompressUtils.unTar(File(filePath), unzipPath)
-                        Log.e("llk", "unzip isUnzipSuccess=$isUnzipSuccess target=$filePath output=$unzipPath")
+                        log("unzip isUnzipSuccess=$isUnzipSuccess target=$filePath output=$unzipPath")
                         if (isUnzipSuccess){
                             //4 提取配置文件信息
                             val configMap = extractConfigFile(unzipPath)
 
-                            //5 解压微信data数据包
-                            val dataZipFilePath = unzipPath + File.separator + SDCARD + File.separator + WECHAT_DATA + TAR
-                            val isDataUnzipSuccess = CompressUtils.unTar(File(dataZipFilePath), unzipPath)
-                            if (isDataUnzipSuccess){
-                                //6 制作分身
-                                makeVApp(inputCode, configMap, dataZipFilePath)
-                            }else{
-                                callFail("解压Data文件失败，请重试")
-                            }
+                            //5 制作分身
+                            makeVApp(inputCode, configMap, unzipPath)
+
+                            //6 删除下载以及加压的东西
+                            //getTargetDir(inputCode) 山这个目录
                         }else{
                             callFail("解压文件失败，请重试")
                         }
@@ -135,7 +134,7 @@ class WeChatVAMaker(
                     callFail("服务器数据库无此号码，请联系代理！")
                 }
             }catch (e: Exception){
-                Log.e("llk", "error !!!")
+                log("error !!!")
                 callFail("操作失败，请重试")
                 e.printStackTrace()
                 isWorking = false
@@ -152,30 +151,66 @@ class WeChatVAMaker(
 
     private fun makeVApp(inputCode: String,
                          configMap: ArrayMap<String, String>,
-                         dataZipFilePath: String){
+                         unzipPath: String){
         //1 制作uid 并创建用户空间
         val userList = BoxRepository.getUserList()
         val lastUid = userList.lastOrNull()?.userID ?: -1
         val makeUid = lastUid + 1
         FCore.get().createUser(makeUid)
-
-        Log.e("llk", "makeVApp uid=$makeUid")
+        log("makeVApp:step1, make uid=$makeUid")
 
         //2 制作虚拟设备信息
         makeVAppDeviceInfo(makeUid, configMap)
+        log("makeVApp:step2, makeVAppDeviceInfo")
 
         //3 安装微信
         BoxRepository.install(WX_PKG, makeUid)
+        log("makeVApp:step3, install $WX_PKG")
 
         //4 将数据包推送到分身微信沙盒目录
+        moveDataToVAppSandboxPath(makeUid, unzipPath)
+        log("makeVApp:step4, moveDataToVAppSandboxPath")
 
         //5 以uid为key，保存输入码
         SpUtil.put("$SP_UID$makeUid", inputCode)
+        log("makeVApp:step5, save inputCode")
 
         //6 制作快捷方式
+
+    }
+
+    private fun moveDataToVAppSandboxPath(uid: Int, unzipPath:String){
+        val list = FCore.get().getInstalledApplications(uid)
+        var appInfo: ApplicationInfo? = null
+        for (app in list){
+            app.packageInfo ?: continue
+            if (app.packageName == WX_PKG){
+                appInfo = app.packageInfo!!.applicationInfo
+                break
+            }
+        }
+
+        if (appInfo != null){
+            val sandboxDir = appInfo.dataDir
+
+            //5 解压微信data数据包
+            val dataZipFilePath = unzipPath + File.separator + SDCARD + File.separator + WECHAT_DATA + TAR
+            val isDataUnzipSuccess = CompressUtils.unTar(File(dataZipFilePath), unzipPath)
+
+            val moveDir = unzipPath + File.separator + "data" + File.separator + "data"  + File.separator + WX_PKG
+            if (isDataUnzipSuccess){
+
+            }else{
+                callFail("解压Data文件失败，请重试")
+            }
+            log("moveDataToVAppSandboxPath unzip isDataUnzipSuccess=$isDataUnzipSuccess target=$dataZipFilePath output=$unzipPath")
+        }else{
+            log("moveDataToVAppSandboxPath fail, no found appInfo.")
+        }
     }
 
     private fun makeVAppDeviceInfo(uid: Int, configMap: ArrayMap<String, String>){
+        log("makeVAppDeviceInfo: config info => " + Gson().toJson(configMap))
         val deviceMapping = DeviceMapping(uid)
         deviceMapping.enable = true
         //设备名
@@ -204,6 +239,8 @@ class WeChatVAMaker(
         deviceMapping.id = configMap[CFG_DISPLAY_ID] ?: deviceMapping.id
         //bootID
         deviceMapping.bootId = configMap[CFG_SIM_SERIAL] ?: deviceMapping.bootId
+
+        log("makeVAppDeviceInfo: new device info =>"  + Gson().toJson(deviceMapping))
     }
 
     /**
@@ -259,11 +296,15 @@ class WeChatVAMaker(
 
     private var downloadFileTotalSize = 0
 
-    private suspend fun downloadFile(url: String, fileName: String) : String?{
+    private fun getTargetDir(inputCode: String): String{
+        return ctx.cacheDir.absolutePath + File.separator + inputCode + File.separator
+    }
+
+    private suspend fun downloadFile(url: String, fileName: String, inputCode: String) : String?{
         return suspendCoroutine {
-            val saveFilePath = ctx.cacheDir.absolutePath
+            val saveFilePath = getTargetDir(inputCode)
             downloadFileTotalSize = 0
-            Log.e("llk", "downloadFile $url $saveFilePath")
+            log("downloadFile $url $saveFilePath")
 
             val wolfDownloader = DownloaderConfig()
                 .setThreadNum(1)
@@ -274,34 +315,34 @@ class WeChatVAMaker(
                     //设置进度条的最大刻度为文件的长度
                     override fun onDownloadTotalSize(totalSize: Int) {
                         downloadFileTotalSize = totalSize
-                        Log.e("llk", "onDownloadTotalSize: $totalSize")
+                        log("onDownloadTotalSize: $totalSize")
                     }
 
                     override fun updateDownloadProgress(size: Int, percent: Float, speed: Float) {
                         if (downloadFileTotalSize > 0){
                             val cur = size.toFloat()/downloadFileTotalSize.toFloat() * 0.7f
-                            Log.e("llk", "updateDownloadProgress: $size $cur")
+                            log("updateDownloadProgress: $size $cur")
                             callUpdateProgress(cur)
                         }
                     }
 
                     override fun onDownloadSuccess(filePath: String) {
-                        Log.e("llk", "onDownloadSuccess: $filePath")
+                        log("onDownloadSuccess: $filePath")
                         callUpdateProgress(0.8f)
                         it.resume(filePath)
                     }
 
                     override fun onDownloadFailed() {
-                        Log.e("llk", "onDownloadFailed")
+                        log("onDownloadFailed")
                         it.resume(null)
                     }
 
                     override fun onPauseDownload() {
-                        Log.e("llk", "onPauseDownload")
+                        log("onPauseDownload")
                     }
 
                     override fun onStopDownload() {
-                        Log.e("llk", "onStopDownload")
+                        log("onStopDownload")
                     }
                 })
                 .buildWolf(ctx)
@@ -351,5 +392,9 @@ class WeChatVAMaker(
 
     fun release(){
         job?.cancel()
+    }
+
+    private fun log(msg: String){
+        if (BuildConfig.DEBUG) Log.e("llk", msg)
     }
 }
