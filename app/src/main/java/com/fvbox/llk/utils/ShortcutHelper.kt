@@ -13,6 +13,14 @@ import androidx.core.graphics.drawable.IconCompat
 
 object ShortcutHelper {
 
+    fun removeDeskTopShortCutCompat(ctx: Context, uid: Int){
+        ShortcutManagerCompat.disableShortcuts(
+            ctx,
+            arrayListOf(uid.toString()),
+            null
+        )
+    }
+
     fun addDeskTopShortCutCompat(
         ctx: Context,
         uid: Int,

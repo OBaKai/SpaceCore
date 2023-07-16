@@ -537,7 +537,7 @@ public class WaveView extends View {
      * @return
      */
     public WaveView setPrecent(float precent) {
-        this.mPrecent = precent;
+        this.mPrecent = Math.min(precent, 1.0f);
         return this;
     }
 

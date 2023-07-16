@@ -59,6 +59,7 @@ class TabInputFragment : Fragment(R.layout.fragment_homt_tab_input), View.OnClic
         v?.findViewById<ImageView>(R.id.ivAdd)?.setOnClickListener(this)
         v?.findViewById<ImageView>(R.id.ivScan)?.setOnClickListener(this)
         waveView = v?.findViewById(R.id.waveView)
+        updateProgress(0f)
         return v
     }
 

@@ -15,6 +15,7 @@ import com.fvbox.R
 import com.fvbox.data.BoxRepository
 import com.fvbox.data.bean.box.BoxAppBean
 import com.fvbox.llk.WeChatVAMaker
+import com.fvbox.llk.utils.ShortcutHelper
 import com.fvbox.llk.utils.SpUtil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -165,6 +166,7 @@ class TabListFragment : Fragment(R.layout.fragment_homt_tab_list) {
             SpUtil.remove("${WeChatVAMaker.SP_UID}$uid")
 
             withContext(Dispatchers.Main){
+                ShortcutHelper.removeDeskTopShortCutCompat(requireContext(), uid)
                 listAdapter.removeData(pos)
                 isRemoveing = false
 
