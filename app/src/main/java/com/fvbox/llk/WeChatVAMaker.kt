@@ -122,10 +122,7 @@ class WeChatVAMaker(
                             makeVApp(inputCode, configMap, unzipPath)
 
                             //6 删除下载以及加压的东西
-                            val cacheFile = File(getTargetDir(inputCode))
-                            if (cacheFile.exists()){
-                                cacheFile.delete()
-                            }
+                            File(getTargetDir(inputCode)).deleteRecursively()
 
                             callSuccess()
                         }else{
