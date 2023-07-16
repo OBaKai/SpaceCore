@@ -1,10 +1,14 @@
 package com.fvbox.llk.ui
 
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.animation.BounceInterpolator
+import android.view.animation.LinearInterpolator
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.core.view.isVisible
@@ -17,41 +21,49 @@ import com.fvbox.data.bean.box.BoxAppBean
 import com.fvbox.llk.WeChatVAMaker
 import com.fvbox.llk.utils.ShortcutHelper
 import com.fvbox.llk.utils.SpUtil
+import com.gxz.library.SwapRecyclerView
+import com.gxz.library.SwapWrapperUtils
+import com.gxz.library.SwipeMenuBuilder
+import com.gxz.library.bean.SwipeMenu
+import com.gxz.library.bean.SwipeMenuItem
+import com.gxz.library.view.SwipeMenuLayout
+import com.gxz.library.view.SwipeMenuView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class TabListFragment : Fragment(R.layout.fragment_homt_tab_list) {
+
+class TabListFragment : Fragment(R.layout.fragment_homt_tab_list), SwipeMenuBuilder {
 
     companion object{
-        private class AppViewHolder: RecyclerView.ViewHolder {
+        private class AppViewHolder(view: View) : RecyclerView.ViewHolder(view) {
 
             val icon: ImageView
             val name: TextView
             val itemLayout: View
-            val delLayout: View
 
-            constructor(view: View) : super(view) {
+            init {
                 icon = view.findViewById(R.id.icon)
                 name = view.findViewById(R.id.name)
-                itemLayout = view.findViewById(R.id.ll_item)
-                delLayout = view.findViewById(R.id.txt_delete)
+                itemLayout = view.findViewById(R.id.clLayout)
             }
         }
     }
 
-    private var listView: RecyclerView? = null
+    private var listView: SwapRecyclerView? = null
     private var tvEmpty: TextView? = null
 
     private val listAdapter by lazy {
         object : RecyclerView.Adapter<AppViewHolder>() {
 
+            private val swipeMenuBuilder: SwipeMenuBuilder = this@TabListFragment
+
             private val datas = mutableListOf<BoxAppBean>()
 
-            private var itemClick: ((Int, Boolean)->Unit)? = null
+            private var itemClick: ((Int)->Unit)? = null
 
-            fun setItemClick(cb: ((Int, Boolean)->Unit)?){
+            fun setItemClick(cb: ((Int)->Unit)?){
                 itemClick = cb
             }
 
@@ -72,8 +84,17 @@ class TabListFragment : Fragment(R.layout.fragment_homt_tab_list) {
 
             override fun getItemCount(): Int = datas.size
 
-            override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AppViewHolder =
-                AppViewHolder(LayoutInflater.from(parent.context).inflate(R.layout.item_tab_list_app, parent, false))
+            override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AppViewHolder{
+                val menuView: SwipeMenuView = swipeMenuBuilder.create()
+                val swipeMenuLayout: SwipeMenuLayout = SwapWrapperUtils.wrap(
+                    parent,
+                    R.layout.item_tab_list_app,
+                    menuView,
+                    BounceInterpolator(),
+                    LinearInterpolator()
+                )
+               return AppViewHolder(swipeMenuLayout)
+            }
 
             override fun onBindViewHolder(holder: AppViewHolder, position: Int) {
                 val item = datas[position]
@@ -84,10 +105,7 @@ class TabListFragment : Fragment(R.layout.fragment_homt_tab_list) {
                 holder.name.text = "${item.name}${inputCode ?: ""}"
 
                 holder.itemLayout.setOnClickListener {
-                    itemClick?.invoke(position, false)
-                }
-                holder.delLayout.setOnClickListener {
-                    itemClick?.invoke(position, true)
+                    itemClick?.invoke(position)
                 }
             }
 
@@ -101,13 +119,9 @@ class TabListFragment : Fragment(R.layout.fragment_homt_tab_list) {
             layoutManager = LinearLayoutManager(requireContext(), RecyclerView.VERTICAL, false)
             adapter = listAdapter
 
-            listAdapter.setItemClick {position, isDel->
+            listAdapter.setItemClick {position->
                 val data = listAdapter.getData(position)
-                if (isDel){
-                    removeVApp(data.userID, position)
-                }else{
-                    BoxRepository.launchApp(data.pkg, data.userID)
-                }
+                BoxRepository.launchApp(data.pkg, data.userID)
             }
         }
 
@@ -118,6 +132,13 @@ class TabListFragment : Fragment(R.layout.fragment_homt_tab_list) {
     override fun onResume() {
         super.onResume()
         loadData()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        for (i in 0 until listAdapter.itemCount){
+            listView?.smoothCloseMenu(i)
+        }
     }
 
     private var isLoading = false
@@ -167,6 +188,7 @@ class TabListFragment : Fragment(R.layout.fragment_homt_tab_list) {
 
             withContext(Dispatchers.Main){
                 ShortcutHelper.removeDeskTopShortCutCompat(requireContext(), uid)
+                listView?.smoothCloseMenu(pos)
                 listAdapter.removeData(pos)
                 isRemoveing = false
 
@@ -176,5 +198,23 @@ class TabListFragment : Fragment(R.layout.fragment_homt_tab_list) {
                 }
             }
         }
+    }
+
+    private val mOnSwipeItemClickListener =
+        SwipeMenuView.OnMenuItemClickListener { pos, _, _ ->
+            val data = listAdapter.getData(pos)
+            removeVApp(data.userID, pos)
+        }
+
+    override fun create(): SwipeMenuView {
+        val menu = SwipeMenu(requireContext())
+        val item = SwipeMenuItem(requireContext())
+        item.setTitle("删除")
+            .setTitleColor(Color.WHITE)
+            .background = ColorDrawable(Color.RED)
+        menu.addMenuItem(item)
+        val menuView = SwipeMenuView(menu)
+        menuView.setOnMenuItemClickListener(mOnSwipeItemClickListener)
+        return menuView
     }
 }
